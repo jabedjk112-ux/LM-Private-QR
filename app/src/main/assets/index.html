@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private QR Code LM</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Elements -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- CDNs of core packages -->
+    <!-- Crypto-JS for AES-256 Encryption & SHA-256 Password Hashing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- QRCode.js for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- jsQR for robust camera/image-based QR decoding -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <!-- Firebase App & Services (Compat SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <!-- Floating Neon Particles Base background -->
+    <div class="neon-particles">
+        <div class="particle p1"></div>
+        <div class="particle p2"></div>
+        <div class="particle p3"></div>
+        <div class="particle p4"></div>
+    </div>
+
+    <!-- 1. SPLASH SCREEN -->
+    <div id="splash-screen" class="splash-container">
+        <div class="splash-content">
+            <!-- 3D floating QR cube representation -->
+            <div class="cube-container">
+                <div class="cube">
+                    <div class="face front"><i class="fa-solid fa-qrcode"></i></div>
+                    <div class="face back"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="face right"><i class="fa-solid fa-key"></i></div>
+                    <div class="face left"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="face top"><i class="fa-solid fa-lock"></i></div>
+                    <div class="face bottom"><i class="fa-solid fa-user-shield"></i></div>
+                </div>
+            </div>
+            <h1 class="splash-title">PRIVATE QR <span>LM</span></h1>
+            <p class="splash-subtitle">Secure Auto-Destruction QR Ecosystem</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar-glow"></div>
+            </div>
+            <div class="splash-status">Calibrating AES-256 modules...</div>
+        </div>
+    </div>
+
+    <!-- 2. LOGIN / REGISTER SCREEN -->
+    <div id="auth-screen" class="auth-container hidden">
+        <div class="glass-card auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fa-solid fa-shield-halved auth-shield-icon"></i>
+                </div>
+                <h2>Quantum System Authentication</h2>
+                <p>Access secure cloud keys or continue offline</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button id="tab-login-btn" class="auth-tab-btn active" onclick="switchAuthTab('login')">LOGIN</button>
+                <button id="tab-register-btn" class="auth-tab-btn" onclick="switchAuthTab('register')">REGISTER</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form" onsubmit="handleAuthSubmit(event, 'login')">
+                <div class="input-glow-group">
+                    <i class="fa-solid fa-envelope input-icon"></i>
+                    <input type="email" id="login-email" placeholder="Secure Email Address" required>
+                </div>
+                <div class="input-glow-group">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="login-password" placeholder="Key Password" required>
+                </div>
+                <button type="submit" class="glowing-btn"><i class="fa-solid fa-fingerprint"></i> AUTHORIZE DECRYPT</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form hidden" onsubmit="handleAuthSubmit(event, 'register')">
+                <div class="input-glow-group">
+                    <i class="fa-solid fa-user input-icon"></i>
+                    <input type="text" id="reg-name" placeholder="Agent Alias" required>
+                </div>
+                <div class="input-glow-group">
+                    <i class="fa-solid fa-envelope input-icon"></i>
+                    <input type="email" id="reg-email" placeholder="Agent Email Protocol" required>
+                </div>
+                <div class="input-glow-group">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="reg-password" placeholder="Passphrase" required>
+                </div>
+                <button type="submit" class="glowing-btn btn-purple"><i class="fa-solid fa-user-plus"></i> INITIALIZE ENCRYPTION KEY</button>
+            </form>
+
+            <div class="auth-divider">
+                <span>OR</span>
+            </div>
+
+            <!-- Guest / Offline Mode -->
+            <button class="glowing-secondary-btn" onclick="continueOffline()">
+                <i class="fa-solid fa-wifi-slash"></i> ENTER DECENTRALIZED OFFLINE MODE
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="main-app" class="app-container hidden">
+        <!-- TOP IMMERSIVE HEADER -->
+        <header class="app-header">
+            <div class="header-brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-qrcode pulse-logo"></i>
+                </div>
+                <div>
+                    <h3 class="brand-title">PRIVATE QR <span>LM</span></h3>
+                    <p class="brand-status" id="connection-status"><span class="status-dot green"></span> OFFLINE ENGINE SECURED</p>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Matrix Mode">
+                    <i class="fa-solid fa-circle-half-stroke"></i>
+                </button>
+                <div class="user-pill" onclick="navigateToSection('profile')">
+                    <img id="user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" alt="Avatar">
+                    <span id="user-display-name">Agent</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <div class="layout-body">
+            <!-- SIDEBAR NAVIGATION / RAIL (Large Screen / Responsive View) -->
+            <nav class="side-navigation">
+                <button class="nav-item active" data-target="dashboard" onclick="navigateToSection('dashboard')">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-target="generator" onclick="navigateToSection('generator')">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Create QR</span>
+                </button>
+                <button class="nav-item" data-target="scanner" onclick="navigateToSection('scanner')">
+                    <i class="fa-solid fa-expand"></i>
+                    <span>Scan QR</span>
+                </button>
+                <button class="nav-item" data-target="history" onclick="navigateToSection('history')">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>QR Archive</span>
+                </button>
+                <button class="nav-item" data-target="profile" onclick="navigateToSection('profile')">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>System Keys</span>
+                </button>
+            </nav>
+
+            <!-- SCRRENS CONTAINER -->
+            <main class="screens-viewport">
+                
+                <!-- ====== 1. DASHBOARD OVERVIEW ====== -->
+                <section id="screen-dashboard" class="app-screen">
+                    <div class="welcome-box">
+                        <div class="welcome-text">
+                            <h2>Welcome Back, <span id="agent-welcome-name">Agent</span></h2>
+                            <p>Ecosystem state: Secure. All local data is fully AES-256 protected.</p>
+                        </div>
+                        <div class="date-tag orbitron" id="live-clock">12:00:00 UTC</div>
+                    </div>
+
+                    <!-- Glowing Glassmorphic Cards Row (3D Stat Indicators) -->
+                    <div class="stats-grid">
+                        <div class="glass-card stat-card glow-cyan">
+                            <div class="stat-icon-wrapper">
+                                <i class="fa-solid fa-circle-check cyan-glow-text"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4 class="stat-value" id="stat-active">0</h4>
+                                <p class="stat-label">Active Private Keys</p>
+                            </div>
+                            <div class="stat-badge status-active">ACTIVE</div>
+                        </div>
+
+                        <div class="glass-card stat-card glow-red">
+                            <div class="stat-icon-wrapper">
+                                <i class="fa-solid fa-circle-radiation red-glow-text"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4 class="stat-value" id="stat-destroyed">0</h4>
+                                <p class="stat-label">Self-Destroyed QRs</p>
+                            </div>
+                            <div class="stat-badge status-destroyed">DESTROYED</div>
+                        </div>
+
+                        <div class="glass-card stat-card glow-purple">
+                            <div class="stat-icon-wrapper">
+                                <i class="fa-solid fa-hourglass-half purple-glow-text"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h4 class="stat-value" id="stat-total-uses">0</h4>
+                                <p class="stat-label">Scans Completed</p>
+                            </div>
+                            <div class="stat-badge status-pending">SECURITY LOG</div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Secondary Grid -->
+                    <div class="dashboard-grid">
+                        <!-- Left Side: Recent Active Actions -->
+                        <div class="glass-card grid-col-main">
+                            <div class="card-title-bar">
+                                <h3><i class="fa-solid fa-unlock-keyhole"></i> Secure Dynamic Operations</h3>
+                                <div class="pulse-ring"></div>
+                            </div>
+                            <p class="card-desc text-muted">Generate high-security vector QR targets that grant strict one-time or two-use permissions before auto-scrubbing content from local & cloud nodes.</p>
+                            
+                            <div class="quick-action-strip">
+                                <button class="quick-action-card" onclick="navigateToSection('generator')">
+                                    <i class="fa-solid fa-font icon-text"></i>
+                                    <h5>Secure Text</h5>
+                                </button>
+                                <button class="quick-action-card" onclick="navigateToSection('generator', 'url')">
+                                    <i class="fa-solid fa-link icon-url"></i>
+                                    <h5>Protected URL</h5>
+                                </button>
+                                <button class="quick-action-card" onclick="navigateToSection('generator', 'wifi')">
+                                    <i class="fa-solid fa-wifi icon-wifi"></i>
+                                    <h5>Encrypted WiFi</h5>
+                                </button>
+                                <button class="quick-action-card" onclick="navigateToSection('generator', 'file')">
+                                    <i class="fa-solid fa-file-code icon-file"></i>
+                                    <h5>Binary / Image</h5>
+                                </button>
+                            </div>
+
+                            <div class="secure-banner mt-4">
+                                <div class="banner-icon">
+                                    <i class="fa-solid fa-shield-virus"></i>
+                                </div>
+                                <div class="banner-body">
+                                    <h4>Two-Use Self-Destruct Control Activated</h4>
+                                    <p>By default, newly generated QR keys enforce a strict 2-scans max lifecycle. On the 2nd scan, the internal encryption keys are permanently scrubbed from local cache and cloud collections. No trace is left behind.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side: Cloud status indicator & quick scan -->
+                        <div class="glass-card grid-col-side">
+                            <h3>Quantum Scanner Target</h3>
+                            <div class="scanner-card-preview" onclick="navigateToSection('scanner')">
+                                <div class="animated-line"></div>
+                                <div class="scanner-icon-bg">
+                                    <i class="fa-solid fa-expand text-cyan"></i>
+                                </div>
+                                <p>Tap to Open Scanner Camera</p>
+                            </div>
+                            <div class="action-btn-container mt-4">
+                                <button class="glowing-btn flex-center w-100" onclick="navigateToSection('scanner')">
+                                    <i class="fa-solid fa-camera"></i> SCAN NOW
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- ====== 2. GENERATOR SECTION ====== -->
+                <section id="screen-generator" class="app-screen hidden">
+                    <div class="screen-header">
+                        <h2>Create Password-Protected QR</h2>
+                        <p>Configure AES-256 cryptographically sealed QR codes with self-destruction controls</p>
+                    </div>
+
+                    <div class="generator-grid">
+                        <!-- Left pane: input forms -->
+                        <div class="glass-card">
+                            <!-- Type selection tab bar -->
+                            <div class="type-selector-tabs">
+                                <button class="type-tab active" data-type="text" onclick="setQRFormType('text')"><i class="fa-solid fa-font"></i> Text</button>
+                                <button class="type-tab" data-type="url" onclick="setQRFormType('url')"><i class="fa-solid fa-link"></i> URL</button>
+                                <button class="type-tab" data-type="wifi" onclick="setQRFormType('wifi')"><i class="fa-solid fa-wifi"></i> WiFi</button>
+                                <button class="type-tab" data-type="contact" onclick="setQRFormType('contact')"><i class="fa-solid fa-id-card"></i> Contact</button>
+                                <button class="type-tab" data-type="file" onclick="setQRFormType('file')"><i class="fa-solid fa-file-arrow-up"></i> File/Media</button>
+                            </div>
+
+                            <form id="generator-form" onsubmit="generateSecureQR(event)">
+                                <!-- SECURE TEXT INPUT -->
+                                <div id="form-group-text" class="form-content-group">
+                                    <label class="input-label">Private Text Content</label>
+                                    <textarea id="qr-input-text" class="matrix-textarea" placeholder="Type secret message or decryption telemetry here..." rows="4"></textarea>
+                                </div>
+
+                                <!-- SECURE URL INPUT -->
+                                <div id="form-group-url" class="form-content-group hidden">
+                                    <label class="input-label">Sealed Destination URL</label>
+                                    <div class="input-glow-group">
+                                        <i class="fa-solid fa-globe input-icon"></i>
+                                        <input type="url" id="qr-input-url" placeholder="https://secure-node.com/telemetry">
+                                    </div>
+                                </div>
+
+                                <!-- SECURE WIFI INPUT -->
+                                <div id="form-group-wifi" class="form-content-group hidden">
+                                    <label class="input-label">Network Name (SSID)</label>
+                                    <div class="input-glow-group">
+                                        <i class="fa-solid fa-wifi input-icon"></i>
+                                        <input type="text" id="qr-input-wifi-ssid" placeholder="Secret Network ID">
+                                    </div>
+                                    <label class="input-label mt-3">Network Passkey</label>
+                                    <div class="input-glow-group">
+                                        <i class="fa-solid fa-key input-icon"></i>
+                                        <input type="text" id="qr-input-wifi-password" placeholder="SSID secret passcode">
+                                    </div>
+                                    <label class="input-label mt-3">Security Level</label>
+                                    <select id="qr-input-wifi-auth" class="matrix-select">
+                                        <option value="WPA">WPA/WPA2 Secured</option>
+                                        <option value="WEP">WEP Protocol</option>
+                                        <option value="nopass">None/Open</option>
+                                    </select>
+                                </div>
+
+                                <!-- SECURE CONTACT INPUT -->
+                                <div id="form-group-contact" class="form-content-group hidden">
+                                    <label class="input-label">Full Name</label>
+                                    <div class="input-glow-group">
+                                        <i class="fa-solid fa-user input-icon"></i>
+                                        <input type="text" id="qr-input-contact-name" placeholder="John Doe">
+                                    </div>
+                                    <label class="input-label mt-3">Phone Terminal</label>
+                                    <div class="input-glow-group">
+                                        <i class="fa-solid fa-phone input-icon"></i>
+                                        <input type="tel" id="qr-input-contact-phone" placeholder="+1-555-0199">
+                                    </div>
+                                    <label class="input-label mt-3">Email Node</label>
+                                    <div class="input-glow-group">
+                                        <i class="fa-solid fa-envelope input-icon"></i>
+                                        <input type="email" id="qr-input-contact-email" placeholder="john@security.net">
+                                    </div>
+                                </div>
+
+                                <!-- SECURE FILE / IMAGE / VIDEO INPUT -->
+                                <div id="form-group-file" class="form-content-group hidden">
+                                    <label class="input-label">Upload File / Image / Video</label>
+                                    <p class="text-xs text-muted mb-2">Converts file to an AES-256 encrypted local bundle database storage key.</p>
+                                    <div class="file-uploader" onclick="document.getElementById('qr-input-file').click()">
+                                        <i class="fa-solid fa-cloud-arrow-up uploader-icon"></i>
+                                        <p id="uploader-filename">Choose Local File (Max 2MB)</p>
+                                        <input type="file" id="qr-input-file" class="hidden" onchange="previewSelectedFile(event)">
+                                    </div>
+                                    <div id="file-preview-area" class="mt-3 hidden">
+                                        <span class="badge badge-cyan" id="file-info-badge">Image: png</span>
+                                    </div>
+                                </div>
+
+                                <div class="visual-divider"></div>
+
+                                <!-- CRYPTOGRAPHY CONFIGURATOR -->
+                                <div class="form-section-header">
+                                    <i class="fa-solid fa-shield-virus"></i> Security Shield Configurations
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label class="input-label">Master Decryption Password (Required)</label>
+                                        <div class="input-glow-group input-heavy">
+                                            <i class="fa-solid fa-lock input-icon-accent"></i>
+                                            <input type="password" id="qr-security-password" placeholder="Enter key decryption password" required autocomplete="off">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="lifecycle-controls mt-3">
+                                    <div class="form-check-group">
+                                        <div class="form-check-pair">
+                                            <label class="toggle-slider-container">
+                                                <input type="checkbox" id="qr-self-destruct" checked onchange="toggleSelfDestructOpts()">
+                                                <span class="slider-round"></span>
+                                            </label>
+                                            <div class="toggle-label-desc">
+                                                <span class="toggle-main">Two-Use Self-Destruct System</span>
+                                                <span class="toggle-sub">Scrub keys & delete target permanently on 2nd successful scan.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="self-destruct-options" class="mt-3 bg-dark-glass p-3 rounded">
+                                        <label class="input-label mt-1">Maximum Allowed Scans</label>
+                                        <select id="qr-max-scans" class="matrix-select">
+                                            <option value="2">2 Scans (Recommended System Default)</option>
+                                            <option value="1">1 Scan (Uncompromising One-Time Payload)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="expiry-controls mt-3">
+                                    <label class="input-label">QR Lifespan Expiry Time</label>
+                                    <select id="qr-expiry" class="matrix-select">
+                                        <option value="0">Never Expire (Strictly controlled by Scan Count)</option>
+                                        <option value="600000">10 Minutes</option>
+                                        <option value="3600000">1 Hour</option>
+                                        <option value="86400000">24 Hours</option>
+                                    </select>
+                                </div>
+
+                                <button type="submit" class="glowing-btn w-100 mt-4 py-3"><i class="fa-solid fa-circle-plus"></i> COMPILE SECURE TARGET</button>
+                            </form>
+                        </div>
+
+                        <!-- Right pane: QR live target visualization -->
+                        <div class="glass-card flex-column flex-center text-center">
+                            <h3>Secure Cryptographic Preview</h3>
+                            <p class="text-xs text-muted mb-3">Live vector QR frame containing local cipher code</p>
+                            
+                            <div class="qr-target-container">
+                                <div class="qr-glowing-backdrop"></div>
+                                <div id="generated-qrcode-container" class="qr-frame">
+                                    <div class="qr-placeholder-inner">
+                                        <i class="fa-solid fa-mask pulse-fast"></i>
+                                        <p>Awaiting Encryption</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="generator-actions-pnl" class="generator-actions-panel hidden">
+                                <div class="qr-id-stamp font-mono text-cyan" id="disp-qr-id">ID: qr_XXXXX</div>
+                                <div class="qr-uses-remaining font-mono" id="disp-qr-uses">Remaining Scans: 2 / 2</div>
+                                
+                                <div class="actions-flex mt-3">
+                                    <button class="glowing-btn py-2 px-3" onclick="downloadQRasPNG()"><i class="fa-solid fa-download"></i> Save PNG</button>
+                                    <button class="glowing-secondary-btn py-2 px-3" onclick="shareSecureQR()"><i class="fa-solid fa-share-nodes"></i> Share Target</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- ====== 3. SCANNER SECTION ====== -->
+                <section id="screen-scanner" class="app-screen hidden">
+                    <div class="screen-header">
+                        <h2>Hyper-Spectral QR Scan</h2>
+                        <p>Aperture camera or secure target uploader decodes encrypted payload codes</p>
+                    </div>
+
+                    <div class="scanner-layout">
+                        <!-- Left or Center: Viewfinder Card -->
+                        <div class="glass-card text-center relative flex-center flex-column">
+                            <div class="viewfinder-container">
+                                <video id="camera-feed" class="camera-feedback" autoplay playsinline></video>
+                                <canvas id="camera-canvas" class="hidden"></canvas>
+                                
+                                <div class="laser-scanner-overlay">
+                                    <div class="scanner-laser"></div>
+                                </div>
+                                <div class="corner t-l"></div>
+                                <div class="corner t-r"></div>
+                                <div class="corner b-l"></div>
+                                <div class="corner b-r"></div>
+
+                                <!-- Indicator if Scanning fails or inactive -->
+                                <div id="camera-fallback" class="fallback-frame flex-center flex-column">
+                                    <i class="fa-solid fa-camera-rotate camera-rotator"></i>
+                                    <p>Deploying Camera Feed...</p>
+                                </div>
+                            </div>
+
+                            <div class="action-btn-container mt-4 flex-center gap-2">
+                                <button class="glowing-btn" id="start-camera-scan-btn" onclick="startCameraScanner()">
+                                    <i class="fa-solid fa-play"></i> Start Camera Scan
+                                </button>
+                                <button class="glowing-secondary-btn" id="stop-camera-scan-btn" onclick="stopCameraScanner()">
+                                    <i class="fa-solid fa-stop"></i> Stop Camera
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Right Card: Manual Decryption File Target Uploader -->
+                        <div class="glass-card">
+                            <h3><i class="fa-solid fa-file-shield"></i> Alternative Decrypt File</h3>
+                            <p class="text-xs text-muted mb-3">If camera system is offline, load a captured screenshot, image file, or export target here:</p>
+
+                            <div class="file-uploader scan-uploader" onclick="document.getElementById('scan-manual-file').click()">
+                                <i class="fa-solid fa-expand uploader-icon"></i>
+                                <p id="scanner-filename">Upload QR Target Image</p>
+                                <input type="file" id="scan-manual-file" class="hidden" accept="image/*" onchange="parseManualQRImage(event)">
+                            </div>
+                            
+                            <div class="visual-divider my-4"></div>
+
+                            <div class="terminal-banner">
+                                <div class="banner-icon text-purple">
+                                    <i class="fa-solid fa-terminal"></i>
+                                </div>
+                                <div class="banner-body">
+                                    <h4 class="font-mono">Security Check Engine</h4>
+                                    <p class="text-xs">This engine checks the target ID integrity immediately against local storage registers and Firestore live arrays before attempting decryptions.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- ====== 4. HISTORY / FAVORITE ARCHIVE ====== -->
+                <section id="screen-history" class="app-screen hidden">
+                    <div class="screen-header">
+                        <h2>Secure Cryptographic QR Archive</h2>
+                        <p>Inspect active encryption payloads, favorites, dynamic use status, and remaining counts</p>
+                    </div>
+
+                    <!-- Filter Strip -->
+                    <div class="toolbar-strip">
+                        <div class="search-box-g">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="archive-search" placeholder="Search archive targets by description or UUID..." onkeyup="filterArchive()">
+                        </div>
+                        <div class="filter-options">
+                            <button class="filter-btn active" data-filter="all" onclick="filterArchiveByStatus('all')">All</button>
+                            <button class="filter-btn" data-filter="active" onclick="filterArchiveByStatus('ACTIVE')">Active</button>
+                            <button class="filter-btn" data-filter="destroyed" onclick="filterArchiveByStatus('DESTROYED')">Destroyed</button>
+                        </div>
+                    </div>
+
+                    <!-- History Cards Container -->
+                    <div id="archives-list-container" class="archives-grid mt-4">
+                        <!-- Generated Dynamically -->
+                        <div class="glass-card p-4 text-center text-muted">
+                            <i class="fa-solid fa-folder-open f-size-3"></i>
+                            <p class="mt-2">No secure key targets compiled yet.</p>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- ====== 5. PROFILE / SETTINGS ====== -->
+                <section id="screen-profile" class="app-screen hidden">
+                    <div class="screen-header">
+                        <h2>Cryptographic System Keys & Settings</h2>
+                        <p>Calibrate synchronization options, clear database clusters, or decouple authenticated nodes</p>
+                    </div>
+
+                    <div class="settings-grid">
+                        <!-- Column Left: Account status -->
+                        <div class="glass-card">
+                            <div class="profile-card">
+                                <div class="profile-avatar-big">
+                                    <img id="profile-pic-big" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150" alt="Profile">
+                                    <div class="online-status-badge"></div>
+                                </div>
+                                <h3 id="profile-name-lbl" class="mt-3">Agent Zero</h3>
+                                <p id="profile-email-lbl" class="text-muted text-xs">offline-protocol-agent</p>
+                                
+                                <div class="badge-status-p mt-2" id="profile-sync-badge">DECENTRALIZED LOCAL CACHE ACTIVE</div>
+                            </div>
+
+                            <div class="visual-divider"></div>
+
+                            <p class="text-xs text-muted">Firebase authorization secures private keys in Firestore. De-authorizing or clearing cache will permanently shred all records unless cloud synced.</p>
+                            
+                            <div id="auth-action-panel" class="mt-3">
+                                <button class="glowing-secondary-btn btn-red w-100" onclick="logoutSession()">
+                                    <i class="fa-solid fa-right-from-bracket"></i> DE-AUTHORIZE QUANTUM PROTOCOL
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Column Right: Settings, cleanup -->
+                        <div class="glass-card">
+                            <h3>Systems Configuration</h3>
+                            
+                            <div class="setting-list mt-3">
+                                <div class="setting-row">
+                                    <div>
+                                        <h5 class="m-0">Matrix Color Mode</h5>
+                                        <p class="text-xs text-muted">Toggle between dark obsidian and stark glass backgrounds</p>
+                                    </div>
+                                    <label class="toggle-slider-container">
+                                        <input type="checkbox" id="setting-darktheme" checked onchange="toggleTheme()">
+                                        <span class="slider-round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="setting-row mt-3">
+                                    <div>
+                                        <h5 class="m-0">Firebase Cloud Synchronization</h5>
+                                        <p class="text-xs text-muted">Keep encrypted hashes mirrored secure backup arrays</p>
+                                    </div>
+                                    <label class="toggle-slider-container">
+                                        <input type="checkbox" id="setting-cloudsync" onchange="toggleCloudSyncSetting()">
+                                        <span class="slider-round"></span>
+                                    </label>
+                                </div>
+
+                                <div class="setting-row mt-3">
+                                    <div>
+                                        <h5 class="m-0">Audit Logging</h5>
+                                        <p class="text-xs text-muted">Print local crypto activities to Dev Console logs</p>
+                                    </div>
+                                    <label class="toggle-slider-container">
+                                        <input type="checkbox" id="setting-logs" checked>
+                                        <span class="slider-round"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="visual-divider my-4"></div>
+
+                            <h3>Dangerous Protocols</h3>
+                            <p class="text-xs text-muted mb-3">These commands can cause immediate loss of encrypted targets and cannot be undone.</p>
+                            
+                            <div class="dangerous-buttons">
+                                <button class="glowing-secondary-btn btn-red mb-2" onclick="destroyAllArchivedQRs()">
+                                    <i class="fa-solid fa-radiation"></i> NUKE LOCAL HISTORY ARCHIVE
+                                </button>
+                                <button class="glowing-secondary-btn" onclick="triggerEasterEgg3D()">
+                                    <i class="fa-solid fa-cube"></i> RE-CENTER 3D FLOOR GRID
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+
+    <!-- ====== MODAL 1: PASSWORD SECURE PROMPT ====== -->
+    <div id="password-prompt-modal" class="modal-overlay hidden">
+        <div class="glass-card modal-card glow-cyan">
+            <div class="modal-hdr">
+                <div class="secure-icon-glow">
+                    <i class="fa-solid fa-key pulse-fast"></i>
+                </div>
+                <h3>Sealed Target Decryption Path</h3>
+                <p>Decrypt payload for target ID: <span id="pwd-prompt-qrid" class="font-mono text-cyan">qr_XXXXX</span></p>
+            </div>
+            
+            <div class="modal-body-content">
+                <p class="text-xs mb-3 text-center">Enter the authentic cryptographic passcode to verify authorization, increase verified use counts, and unlock text payload metrics.</p>
+                <div class="input-glow-group input-heavy">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                    <input type="password" id="modal-decrypt-password" placeholder="Passcode Vault Key" required>
+                </div>
+                <div id="modal-pwd-err" class="modal-error text-red hidden">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Decryption failed. Incorrect Passphrase.
+                </div>
+            </div>
+
+            <div class="modal-footer-btns">
+                <button class="glowing-secondary-btn py-2 px-4" onclick="closeDecryptPromptModal()">ABORT</button>
+                <button class="glowing-btn py-2 px-4" onclick="submitDecryptPassword()">DECRYPT PAYLOAD</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ====== MODAL 2: DECRYPTED CONTENT VIEWER ====== -->
+    <div id="payload-viewer-modal" class="modal-overlay hidden">
+        <div class="glass-card modal-card glow-success">
+            <div class="modal-hdr">
+                <div class="secure-icon-glow bg-green-glow">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-success">AES-256 Decryption Complete</h3>
+                <p>Telemetry Node verified. Integrity secure.</p>
+            </div>
+            
+            <div class="modal-body-content">
+                <div class="usage-count-meter text-center mb-3">
+                    <span class="status-indicator-badge success-badge" id="viewer-status">ACTIVE</span>
+                    <p class="text-xs text-muted mt-2" id="viewer-usage-text">Scans Completed: 1 of 2. One scan remaining!</p>
+                </div>
+
+                <div class="unlocked-content-box">
+                    <div id="unlocked-text-payload" class="unlocked-text font-jetbrains">No payload deciphered.</div>
+                </div>
+
+                <!-- Custom Actions according to type -->
+                <div id="viewer-action-row" class="mt-3 flex-center">
+                    <button class="glowing-secondary-btn py-1 px-3 text-xs" onclick="copyUnlockedPayload()"><i class="fa-solid fa-copy"></i> Copy Value</button>
+                </div>
+            </div>
+
+            <div class="modal-footer-btns">
+                <button class="glowing-btn btn-green py-2 px-6" onclick="closePayloadViewerModal()"><i class="fa-solid fa-circle-check"></i> SECURE DECK</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ====== MODAL 3: SELF DESTRUCT CRITICAL ANIMATION OVERLAY ====== -->
+    <div id="self-destruct-overlay" class="modal-overlay danger-blast-overlay hidden">
+        <div class="blast-card text-center glow-red animate-scale">
+            <div class="radiation-spinner">
+                <i class="fa-solid fa-radiation"></i>
+            </div>
+            
+            <h1 class="critical-alert">WARNING: SYSTEM OVERWRITE</h1>
+            <p class="critical-subheader">Self-Destruction Lifecycle Cleared</p>
+            
+            <div class="destruction-timer orbitron" id="countdown-shred">5</div>
+            
+            <div class="destruction-bar-container">
+                <div class="destruction-bar-glow" id="destruction-timer-bar"></div>
+            </div>
+
+            <p class="text-xs text-muted mt-2">AES-256 Keys are being systematically scrubbed from storage nodes to avoid cyber espionage. Recovery is mathematically impossible.</p>
+            
+            <div class="shredding-console font-mono text-xs" id="shred-terminal-log">
+                [SYSTEM] Initiating shredding protocol...<br>
+                [SYSTEM] Overwriting sector arrays...
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ====== AUDIO EFFECTS (Fallback synthetic hums / notifications) ====== -->
+    <audio id="sound-success" src="https://assets.mixkit.co/active_storage/sfx/911/911-84.wav" preload="auto"></audio>
+    <audio id="sound-error" src="https://assets.mixkit.co/active_storage/sfx/979/979-84.wav" preload="auto"></audio>
+    <audio id="sound-explode" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav" preload="auto"></audio>
+
+    <!-- Project JS modular scripts -->
+    <script src="firebase.js"></script>
+    <script src="generator.js"></script>
+    <script src="scanner.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

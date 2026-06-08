@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Cyan Shield Crest -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M54,18 L78,26 L78,52 C78,70.5 67.8,85.5 54,90 C40.2,85.5 30,70.5 30,52 L30,26 Z" />
+        
+    <!-- Inner Deep Slate Core Layer -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M54,23 L73,30 L73,52 C73,67.3 64.6,79.7 54,83.9 C43.4,67.3 35,52 35,52 L35,30 Z" />
+        
+    <!-- Glowing Security QR Lock Icon details inside core -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M44,38 H50 V44 H44 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M46,40 H48 V42 H46 Z" />
+        
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M58,38 H64 V44 H58 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M60,40 H62 V42 H60 Z" />
+        
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M44,52 H50 V58 H44 Z" />
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M46,54 H48 V56 H46 Z" />
+        
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M58,52 H64 V58 H58 Z M51,46 H57 V50 H51 Z" />
+</vector>

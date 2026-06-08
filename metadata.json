@@ -1,0 +1,6 @@
+{
+  "name": "Private QR Code LM",
+  "description": "Secure password-protected QR code generator and scanner with self-destruction system and AES-256 encryption.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
